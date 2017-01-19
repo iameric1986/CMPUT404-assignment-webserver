@@ -1,5 +1,6 @@
 #  coding: utf-8 
 import SocketServer
+import os
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -29,11 +30,119 @@ import SocketServer
 
 class MyWebServer(SocketServer.BaseRequestHandler):
     
+    data = ""
+    root = "./www"
+    acceptableExtensions = (".html", ".css", "/")
+    requestResult = ""
+    requestContent = ""
+    requestOutput = ""
+    resource = ""
+    
     def handle(self):
+        # Set the default returned results
+        self.set_default_results()
+        
+        # Base code, but I also split the data into a list for ease of parsing. Split is done on white spaces.
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s\n" % self.data)
-        self.request.sendall("OK")
+        print ("Got a request of: %s" % self.data)
+        self.data = self.data.split() # Separate lines because I don't want to chain method calls on one line since it becomes hard to read
+        
+        # Assume that the input always follows the same format
+        if (self.verify_request(self.data[0]) == False):
+            self.return_results()
+            return
+        
+        self.process_request(self.data[1])  
+        
+        # Send request results
+        self.return_results()
+        
+        # Check if the resource request is OK
+        if (self.requestOutput == "200 OK\n"):
+            self.serve_resource()
+        return
+    
+    # Processes the request
+    def process_request(self, filePath):
+        # Checking end of string for acceptable file extensions. If the extension is not recognized, return HTML error.
+        # Ref: http://stackoverflow.com/questions/18351951/check-if-string-ends-with-one-of-the-strings-from-a-list
+        # Author: falsetru
+        # Retrieved: Jan 19, 2017
+        if (filePath.endswith(self.acceptableExtensions) == False):
+            self.set_404_result()
+            return
 
+        # Check if the file path exists.
+        if (os.path.exists(os.path.relpath(self.root + filePath)) == False):
+            self.set_404_result()
+            return        
+        
+        # Check if request is for directory
+        if (filePath[-1] == '/'):
+            self.retrieve_index(filePath)
+            return
+        
+        # Get the resources
+        self.retrieve_resource(filePath)
+        
+        # Return the request as a .html mime type
+        if (filePath.endswith(".html")):
+            self.requestContent = "Content-Type: text/html\n"
+            return
+        
+        # Return the result as a .css mime type
+        self.requestContent = "Content-Type: text/css\n"
+        return
+
+# Resource retrieval 
+# Requests that are servable have their resources retrieved for serving here
+    def retrieve_index(self, directory):
+        self.resource = os.path.relpath(self.root + directory + "index.html")
+        return
+    
+    def retrieve_resource(self, file):
+        self.resource = os.path.relpath(self.root + file)
+        return
+
+# Request result setters
+# The results of the requests are changed/set according to server requirements
+
+    # Verify that the REST request is GET only
+    # Returns False if the REST request is not GET; else return True
+    def verify_request(self, request):
+        if (request != "GET"):
+            self.requestResult = "HTTP/1.1 405 Method Not Allowed\n"
+            self.requestOutput = "405 Method Not Allowed\n"
+            return False
+        return True    
+    
+    # The default returned results.
+    # Ref: The mime typing idea was inspired by http://stackoverflow.com/questions/7282187/python-urllib-post-with-different-content-type-than-urlencoded
+    # Author: Steven
+    # Retrieved: Jan 19, 2017
+    def set_default_results(self):
+        self.requestResult = "HTTP/1.1 200 OK\n"
+        self.requestContent = "Content-Type: text/html\n" #Since we return index.html upon folder request, the default mime type is HTML
+        self.requestOutput = "200 OK\n"
+        return
+    
+    def set_404_result(self):
+        self.requestResult = "HTTP/1.1 404 Not FOUND!\n"
+        self.requestOutput = "404 Not FOUND!\n"        
+        return
+
+    # Send request results to all clients
+    def return_results(self):
+        self.request.sendall(self.requestResult)
+        self.request.sendall(self.requestContent)
+        self.request.sendall(self.requestOutput)
+        return
+    
+    def serve_resource(self):
+        file = open(self.resource, "r")
+        self.request.sendall(file.read())
+        return
+    
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
 
