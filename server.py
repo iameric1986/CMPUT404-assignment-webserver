@@ -31,11 +31,11 @@ import os
 class MyWebServer(SocketServer.BaseRequestHandler):
     
     data = ""
-    root = "./www"
+    root = "/www"
     acceptableExtensions = (".html", ".css", "/")
     requestResult = ""
     requestContent = ""
-    requestOutput = ""
+    requestOutput = -1
     resource = ""
     
     def handle(self):
@@ -44,7 +44,12 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         
         # Base code, but I also split the data into a list for ease of parsing. Split is done on white spaces.
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s" % self.data)
+        
+        # Make sure there is actually data.
+        if (self.data == None or self.data == ""):
+            return
+        
+        #print ("Got a request of: %s" % self.data)
         self.data = self.data.split() # Separate lines because I don't want to chain method calls on one line since it becomes hard to read
         
         # Assume that the input always follows the same format
@@ -58,7 +63,7 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         self.return_results()
         
         # Check if the resource request is OK
-        if (self.requestOutput == "200 OK\n"):
+        if (self.requestOutput == 200):
             self.serve_resource()
         return
     
@@ -73,7 +78,7 @@ class MyWebServer(SocketServer.BaseRequestHandler):
             return
 
         # Check if the file path exists.
-        if (os.path.exists(os.path.relpath(self.root + filePath)) == False):
+        if (os.path.exists(os.curdir + self.root + filePath) == False):
             self.set_404_result()
             return        
         
@@ -87,21 +92,21 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         
         # Return the request as a .html mime type
         if (filePath.endswith(".html")):
-            self.requestContent = "Content-Type: text/html\n"
+            self.requestContent = "Content-Type: text/html\r\n\r\n"
             return
         
         # Return the result as a .css mime type
-        self.requestContent = "Content-Type: text/css\n"
+        self.requestContent = "Content-Type: text/css\r\n\r\n"
         return
 
 # Resource retrieval 
 # Requests that are servable have their resources retrieved for serving here
     def retrieve_index(self, directory):
-        self.resource = os.path.relpath(self.root + directory + "index.html")
+        self.resource = os.curdir + self.root + directory + "index.html"
         return
     
     def retrieve_resource(self, file):
-        self.resource = os.path.relpath(self.root + file)
+        self.resource = os.curdir + self.root + file
         return
 
 # Request result setters
@@ -111,8 +116,8 @@ class MyWebServer(SocketServer.BaseRequestHandler):
     # Returns False if the REST request is not GET; else return True
     def verify_request(self, request):
         if (request != "GET"):
-            self.requestResult = "HTTP/1.1 405 Method Not Allowed\n"
-            self.requestOutput = "405 Method Not Allowed\n"
+            self.requestResult = "HTTP/1.1 405 Method Not Allowed\r\n"
+            self.requestOutput = 405
             return False
         return True    
     
@@ -121,26 +126,30 @@ class MyWebServer(SocketServer.BaseRequestHandler):
     # Author: Steven
     # Retrieved: Jan 19, 2017
     def set_default_results(self):
-        self.requestResult = "HTTP/1.1 200 OK\n"
-        self.requestContent = "Content-Type: text/html\n" #Since we return index.html upon folder request, the default mime type is HTML
-        self.requestOutput = "200 OK\n"
+        self.requestResult = "HTTP/1.1 200 OK\r\n"
+        self.requestContent = "Content-Type: text/html\r\n\r\n" #Since we return index.html upon folder request, the default mime type is HTML
+        self.requestOutput = 200
         return
     
     def set_404_result(self):
-        self.requestResult = "HTTP/1.1 404 Not FOUND!\n"
-        self.requestOutput = "404 Not FOUND!\n"        
+        self.requestResult = "HTTP/1.1 404 Not FOUND!\r\n"
+        self.requestOutput = 404       
         return
+
+# Request responses and resource service
 
     # Send request results to all clients
     def return_results(self):
         self.request.sendall(self.requestResult)
         self.request.sendall(self.requestContent)
-        self.request.sendall(self.requestOutput)
         return
     
+    # Serve a resource
     def serve_resource(self):
+        print(self.resource)
         file = open(self.resource, "r")
         self.request.sendall(file.read())
+        file.close()
         return
     
 if __name__ == "__main__":
