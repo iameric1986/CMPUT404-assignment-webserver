@@ -146,7 +146,6 @@ class MyWebServer(SocketServer.BaseRequestHandler):
     
     # Serve a resource
     def serve_resource(self):
-        print(self.resource)
         file = open(self.resource, "r")
         self.request.sendall(file.read())
         file.close()
