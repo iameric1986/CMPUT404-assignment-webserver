@@ -17,11 +17,11 @@ server.py contains contributions from:
 * Abram Hindle
 * Eddie Antonio Santos
 * Eric Cheng
-* Reference: 
+* Reference (Retrieved Jan 19, 2017). 
 	Thread: Check if string ends with one of the strings from a list
 	URL:    http://stackoverflow.com/questions/18351951/check-if-string-ends-with-one-of-the-strings-from-a-list
 	Author: falsetru
-* Reference:
+* Reference (Retrieved Jan 19, 2017). 
 	Thread: Python urllib post with different content type than urlencoded
 	URL:    http://stackoverflow.com/questions/7282187/python-urllib-post-with-different-content-type-than-urlencoded
 	Author: Steven
