@@ -117,7 +117,7 @@ class MyWebServer(SocketServer.BaseRequestHandler):
     def verify_request(self, request):
         if (request != "GET"):
             self.requestResult = "HTTP/1.1 405 Method Not Allowed\r\n"
-            self.requestOutput = 405
+            self.requestOutput = 405 # Don't really need to set this here (as the code won't ever check it), but doing it for consistency
             return False
         return True    
     
@@ -131,6 +131,7 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         self.requestOutput = 200
         return
     
+    # Set return results
     def set_404_result(self):
         self.requestResult = "HTTP/1.1 404 Not FOUND!\r\n"
         self.requestOutput = 404       
@@ -140,8 +141,7 @@ class MyWebServer(SocketServer.BaseRequestHandler):
 
     # Send request results to all clients
     def return_results(self):
-        self.request.sendall(self.requestResult)
-        self.request.sendall(self.requestContent)
+        self.request.sendall(self.requestResult + self.requestContent)
         return
     
     # Serve a resource
