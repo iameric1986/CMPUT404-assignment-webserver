@@ -87,16 +87,14 @@ class MyWebServer(SocketServer.BaseRequestHandler):
             self.retrieve_index(filePath)
             return
         
-        # Get the resources
-        self.retrieve_resource(filePath)
-        
-        # Return the request as a .html mime type
-        if (filePath.endswith(".html")):
-            self.requestContent = "Content-Type: text/html\r\n\r\n"
+        # Return the request as a .css mime type. Since .html is set by default, we do not need to check if the resource requested for is .html
+        # If it is NOT a folder and NOT a .css file, then we can assume it is .html based on the system requirements.
+        if (filePath.endswith(".css")):
+            self.requestContent = "Content-Type: text/css\r\n\r\n"
             return
         
-        # Return the result as a .css mime type
-        self.requestContent = "Content-Type: text/css\r\n\r\n"
+        # Get the resources
+        self.retrieve_resource(filePath)        
         return
 
 # Resource retrieval 
