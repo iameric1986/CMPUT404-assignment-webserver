@@ -91,7 +91,6 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         # If it is NOT a folder and NOT a .css file, then we can assume it is .html based on the system requirements.
         if (filePath.endswith(".css")):
             self.requestContent = "Content-Type: text/css\r\n\r\n"
-            return
         
         # Get the resources
         self.retrieve_resource(filePath)        
